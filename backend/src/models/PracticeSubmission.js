@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const practiceSubmissionSchema = new mongoose.Schema(
@@ -6,12 +7,24 @@ const practiceSubmissionSchema = new mongoose.Schema(
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Parent', required: true, index: true },
     assignmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'StrategyAssignment', required: true, index: true },
     strategyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Strategy', required: true, index: true },
-    rating: { type: Number, required: true, min: 1, max: 5 },
+
+    sessionNumber: { type: Number, required: true, min: 1, max: 10 },
+
+    StutteringSeverityRating: { type: Number, required: true, min: 0, max: 9 },
+    SpeechNaturalnessRating: { type: Number, required: true, min: 1, max: 9 },
+
     durationSeconds: { type: Number, required: true, min: 0, max: 24 * 60 * 60 },
-    practiceVideoUrl: { type: String, trim: true, default: '' }, // optional parent upload
+
+    practiceVideoUrl: { type: String, trim: true, default: '' },
     submittedAt: { type: Date, required: true, default: Date.now },
   },
   { timestamps: true }
+);
+
+// ✅ FIXED HERE
+practiceSubmissionSchema.index(
+  { assignmentId: 1, sessionNumber: 1 },
+  { unique: true }
 );
 
 const PracticeSubmission = mongoose.model('PracticeSubmission', practiceSubmissionSchema);

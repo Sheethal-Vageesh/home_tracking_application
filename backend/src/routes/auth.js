@@ -29,13 +29,14 @@ const parentRequestSchema = z.object({
   childName: z.string().min(1),
   childAge: z.coerce.number().int().min(1).max(18),
   parentName: z.string().min(1),
-  email: z.string().email(),
+  email: z.string().email().optional().or(z.literal('')),
   phone: z.string().min(6),
 });
 
 const parentLoginSchema = z.object({
   childId: z.string().min(4),
 });
+
 
 authRouter.get('/me', requireAuth, async (req, res) => {
   res.json({ user: req.user });
@@ -126,7 +127,7 @@ authRouter.post('/parent/request', async (req, res, next) => {
       childName: data.childName,
       childAge: data.childAge,
       parentName: data.parentName,
-      email: data.email,
+      email: data.email || '',
       phone: data.phone,
       status: 'pending',
     });
@@ -160,7 +161,7 @@ authRouter.post('/parent/login', async (req, res, next) => {
         childName: parent.childName,
         childAge: parent.childAge,
         parentName: parent.parentName,
-        email: parent.email,
+        email: parent.email || '',
         phone: parent.phone,
         clinicianId: parent.clinicianId,
       },

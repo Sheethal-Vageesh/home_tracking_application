@@ -9,14 +9,18 @@ const { PracticeSubmission } = require('../models/PracticeSubmission');
 const { Message } = require('../models/Message');
 const { validate } = require('../utils/validate');
 const { createUploader, toPublicUploadUrl } = require('../utils/upload');
+const { SessionSubmission } = require('../models/SessionSubmission')
 
 const parentRouter = express.Router();
+
+
+
 
 parentRouter.get('/me', requireAuth, requireRole('parent'), async (req, res, next) => {
   try {
     const parent = await Parent.findById(req.user.parentId);
     if (!parent) {
-      const err = new Error('Parent not found');
+      const err = new Error('Parent not found / ಪೋಷಕರ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ');
       err.statusCode = 404;
       throw err;
     }
@@ -72,7 +76,12 @@ parentRouter.get('/assignments', requireAuth, requireRole('parent'), async (req,
         id: a._id,
         assignedAt: a.assignedAt,
         strategy: a.strategyId
-          ? { id: a.strategyId._id, title: a.strategyId.title, demoVideoUrl: a.strategyId.demoVideoUrl || '' }
+          ? {
+              id: a.strategyId._id,
+              title: a.strategyId.title,
+              kannadaText: a.strategyId.kannadaText || '',
+              demoVideoUrl: a.strategyId.demoVideoUrl || '',
+            }
           : null,
       })),
     });
@@ -86,7 +95,7 @@ parentRouter.get('/assignments/completed', requireAuth, requireRole('parent'), a
     const parentId = req.user.parentId;
     const parent = await Parent.findById(parentId);
     if (!parent) {
-      const err = new Error('Parent not found');
+      const err = new Error('Parent not found / ಪೋಷಕರ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ');
       err.statusCode = 404;
       throw err;
     }
@@ -105,7 +114,12 @@ parentRouter.get('/assignments/completed', requireAuth, requireRole('parent'), a
         assignedAt: a.assignedAt,
         completedAt: a.completedAt,
         strategy: a.strategyId
-          ? { id: a.strategyId._id, title: a.strategyId.title, demoVideoUrl: a.strategyId.demoVideoUrl || '' }
+          ? {
+              id: a.strategyId._id,
+              title: a.strategyId.title,
+              kannadaText: a.strategyId.kannadaText || '',
+              demoVideoUrl: a.strategyId.demoVideoUrl || '',
+            }
           : null,
       })),
     });
@@ -133,8 +147,13 @@ parentRouter.get('/assignments/:assignmentId', requireAuth, requireRole('parent'
         id: assignment._id,
         assignedAt: assignment.assignedAt,
         strategy: assignment.strategyId
-          ? { id: assignment.strategyId._id, title: assignment.strategyId.title, demoVideoUrl: assignment.strategyId.demoVideoUrl || '' }
-          : null,
+        ? {
+            id: assignment.strategyId._id,
+            title: assignment.strategyId.title,
+            kannadaText: assignment.strategyId.kannadaText || '',
+            demoVideoUrl: assignment.strategyId.demoVideoUrl || '',
+          }
+        : null,
       },
     });
   } catch (e) {
@@ -143,6 +162,7 @@ parentRouter.get('/assignments/:assignmentId', requireAuth, requireRole('parent'
 });
 
 const progressUploader = createUploader({ subdir: 'practice-videos' });
+
 
 parentRouter.post(
   '/assignments/:assignmentId/progress',
@@ -155,48 +175,99 @@ parentRouter.post(
       const { assignmentId } = validate(assignmentIdParamSchema, req.params);
 
       const bodySchema = z.object({
-        rating: z.coerce.number().int().min(1).max(5),
-        durationSeconds: z.coerce.number().int().min(0).max(24 * 60 * 60),
+        StutteringSeverityRating: z.coerce
+          .number()
+          .int()
+          .min(0, 'Minimum is 0 / ಕನಿಷ್ಠ ಮೌಲ್ಯ 0')
+          .max(9, 'Maximum is 9 / ಗರಿಷ್ಠ ಮೌಲ್ಯ 9'),
+
+        SpeechNaturalnessRating: z.coerce
+          .number()
+          .int()
+          .min(1, 'Minimum is 1 / ಕನಿಷ್ಠ ಮೌಲ್ಯ 1')
+          .max(9, 'Maximum is 9 / ಗರಿಷ್ಠ ಮೌಲ್ಯ 9'),
+
+        durationSeconds: z.coerce
+          .number()
+          .int()
+          .min(0, 'Invalid duration / ಅಮಾನ್ಯ ಸಮಯ'),
+
+        sessionNumber: z.coerce
+          .number()
+          .int()
+          .min(1, 'Session starts from 1 / ಸೆಷನ್ 1 ರಿಂದ ಪ್ರಾರಂಭವಾಗುತ್ತದೆ')
+          .max(10, 'Maximum 10 sessions / ಗರಿಷ್ಠ 10 ಸೆಷನ್'),
       });
+
       const data = validate(bodySchema, req.body);
 
       const parent = await Parent.findById(parentId);
       if (!parent) {
-        const err = new Error('Parent not found');
+        const err = new Error('Parent not found / ಪೋಷಕರ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ');
         err.statusCode = 404;
         throw err;
       }
 
-      const assignment = await StrategyAssignment.findOne({ _id: assignmentId, parentId, completedAt: null });
+      const assignment = await StrategyAssignment.findOne({
+        _id: assignmentId,
+        parentId,
+      });
+
       if (!assignment) {
-        const err = new Error('Assignment not found');
+        const err = new Error('Assignment not found / ಕಾರ್ಯ ಲಭ್ಯವಿಲ್ಲ');
         err.statusCode = 404;
         throw err;
       }
 
-      const practiceVideoUrl = req.file ? toPublicUploadUrl(req, req.file.path) : '';
+      // ✅ Prevent duplicate submission per session
+      const existing = await PracticeSubmission.findOne({
+        assignmentId: assignment._id,
+        sessionNumber: data.sessionNumber,
+      });
+
+      if (existing) {
+        const err = new Error('Already submitted for this session / ಈ ಸೆಷನ್‌ಗೆ ಈಗಾಗಲೇ ಸಲ್ಲಿಸಲಾಗಿದೆ');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const practiceVideoUrl = req.file
+        ? toPublicUploadUrl(req, req.file.path)
+        : '';
 
       const submission = await PracticeSubmission.create({
         clinicianId: parent.clinicianId,
         parentId,
         assignmentId: assignment._id,
         strategyId: assignment.strategyId,
-        rating: data.rating,
+
+        // ✅ NEW FIELDS
+        StutteringSeverityRating: data.StutteringSeverityRating,
+        SpeechNaturalnessRating: data.SpeechNaturalnessRating,
+
+        stuttering: data.StutteringSeverityRating,
+        naturalness: data.SpeechNaturalnessRating,
+
         durationSeconds: data.durationSeconds,
+        sessionNumber: data.sessionNumber,
+
         practiceVideoUrl,
         submittedAt: new Date(),
       });
 
-      assignment.completedAt = new Date();
-      assignment.active = false;
-      await assignment.save();
-
-      res.status(201).json({ ok: true, submissionId: submission._id });
+      res.status(201).json({
+        ok: true,
+        submissionId: submission._id,
+        message: 'Progress submitted successfully',
+        kannadaMessage: 'ಪ್ರಗತಿ ಯಶಸ್ವಿಯಾಗಿ ಸಲ್ಲಿಸಲಾಗಿದೆ',
+      });
     } catch (e) {
       next(e);
     }
   }
 );
+
+
 
 const messageSchema = z.object({
   text: z.string().trim().min(1).max(2000),
@@ -207,7 +278,7 @@ parentRouter.get('/messages', requireAuth, requireRole('parent'), async (req, re
     const parentId = req.user.parentId;
     const parent = await Parent.findById(parentId);
     if (!parent) {
-      const err = new Error('Parent not found');
+      const err = new Error('Parent not found / ಪೋಷಕರ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ');
       err.statusCode = 404;
       throw err;
     }
@@ -223,13 +294,144 @@ parentRouter.get('/messages', requireAuth, requireRole('parent'), async (req, re
   }
 });
 
+parentRouter.get(
+  '/sessions',
+  requireAuth,
+  requireRole('parent'),
+  async (req, res, next) => {
+    try {
+      const parentId = req.user.parentId
+
+      // all submitted sessions
+      const sessionSubmissions = await SessionSubmission.find({
+        parentId,
+      })
+
+      const submittedMap = {}
+
+      sessionSubmissions.forEach((s) => {
+        submittedMap[s.sessionNumber] = true
+      })
+
+      const sessions = Array.from({ length: 10 }, (_, i) => {
+        const num = i + 1
+
+        return {
+          sessionNumber: num,
+
+          // completed session
+          completed: !!submittedMap[num],
+
+          // lock next session until previous completed
+          locked: num !== 1 && !submittedMap[num - 1],
+        }
+      })
+
+      res.json({ sessions })
+    } catch (e) {
+      next(e)
+    }
+  }
+)
+
+parentRouter.get(
+  '/session/:sessionNumber',
+  requireAuth,
+  requireRole('parent'),
+  async (req, res, next) => {
+    try {
+      const parentId = req.user.parentId
+      const sessionNumber = Number(req.params.sessionNumber)
+
+      // check session submitted
+      const sessionSubmission = await SessionSubmission.findOne({
+        parentId,
+        sessionNumber,
+      })
+
+      const assignments = await StrategyAssignment.find({
+        parentId,
+        active: true,
+      }).populate('strategyId')
+
+      const submissions = await PracticeSubmission.find({
+        parentId,
+        sessionNumber,
+      })
+
+      res.json({
+        assignments: assignments.map((a) => ({
+          id: a._id,
+          strategy: a.strategyId
+            ? {
+                id: a.strategyId._id,
+                title: a.strategyId.title,
+                kannadaText: a.strategyId.kannadaText || '',
+                demoVideoUrl: a.strategyId.demoVideoUrl || '',
+              }
+            : null,
+        })),
+
+        submissions,
+
+        // IMPORTANT
+        sessionSubmitted: !!sessionSubmission,
+      })
+    } catch (e) {
+      next(e)
+    }
+  }
+)
+
+parentRouter.post(
+  '/session/:sessionNumber/submit',
+  requireAuth,
+  requireRole('parent'),
+  async (req, res, next) => {
+    try {
+      const parentId = req.user.parentId
+      const sessionNumber = Number(req.params.sessionNumber)
+
+      // check already submitted
+      const existing = await SessionSubmission.findOne({
+        parentId,
+        sessionNumber,
+      })
+
+      if (existing) {
+        const err = new Error(
+          'Session already submitted / ಸೆಷನ್ ಈಗಾಗಲೇ ಸಲ್ಲಿಸಲಾಗಿದೆ'
+        )
+        err.statusCode = 400
+        throw err
+      }
+
+      
+      const parent = await Parent.findById(parentId)
+
+      await SessionSubmission.create({
+        parentId,
+        clinicianId: parent.clinicianId,
+        sessionNumber,
+      })
+
+      res.json({
+        ok: true,
+        message:
+          'Session submitted successfully / ಸೆಷನ್ ಯಶಸ್ವಿಯಾಗಿ ಸಲ್ಲಿಸಲಾಗಿದೆ',
+      })
+    } catch (e) {
+      next(e)
+    }
+  }
+)
 parentRouter.post('/messages', requireAuth, requireRole('parent'), async (req, res, next) => {
   try {
     const parentId = req.user.parentId;
     const { text } = validate(messageSchema, req.body);
     const parent = await Parent.findById(parentId);
     if (!parent) {
-      const err = new Error('Parent not found');
+      const err = new Error('Parent not found / ಪೋಷಕರ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ');
       err.statusCode = 404;
       throw err;
     }
@@ -243,11 +445,25 @@ parentRouter.post('/messages', requireAuth, requireRole('parent'), async (req, r
       createdAt: new Date(),
     });
 
-    res.status(201).json({ message: { id: msg._id, senderRole: msg.senderRole, text: msg.text, createdAt: msg.createdAt } });
+    res.status(201).json({
+      message: {
+        id: msg._id,
+        senderRole: msg.senderRole,
+        text: msg.text,
+        createdAt: msg.createdAt,
+      },
+
+      info: 'Message sent successfully',
+      kannadaInfo: 'ಸಂದೇಶ ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ',
+    });
   } catch (e) {
     next(e);
   }
 });
+
+
+
+
 
 module.exports = { parentRouter };
 

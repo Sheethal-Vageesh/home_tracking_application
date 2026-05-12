@@ -13,6 +13,8 @@ const { validate } = require('../utils/validate');
 const { sendChildIdNotification, sendStrategiesAssignedNotification } = require('../utils/mailer');
 const { sendChildIdSms } = require('../utils/sms');
 const { createUploader, toPublicUploadUrl } = require('../utils/upload');
+const { SessionSubmission } = require('../models/SessionSubmission')
+
 
 const clinicianRouter = express.Router();
 
@@ -125,6 +127,103 @@ const assignSchema = z.object({
   strategyIds: z.array(z.string().min(1)).default([]),
 });
 
+clinicianRouter.get(
+  '/progress-dashboard',
+  requireAuth,
+  requireRole('clinician'),
+  async (req, res, next) => {
+    try {
+
+      const clinicianId = req.user.clinicianId
+
+      const parents = await Parent.find({
+        clinicianId,
+      })
+
+      const result = await Promise.all(
+        parents.map(async (p) => {
+
+          const sessions =
+            await SessionSubmission.find({
+              parentId: p._id,
+            })
+
+          const submissions =
+            await PracticeSubmission.find({
+              parentId: p._id,
+            })
+            // console.log(
+            //     'SUBMISSIONS:',
+            //     JSON.stringify(submissions, null, 2)
+            //   )
+
+         
+              let avgSeverity = 0
+
+            if (submissions.length > 0) {
+
+              const sessionMap = {}
+
+              submissions.forEach((s) => {
+
+                const session = s.sessionNumber || 0
+
+                if (!sessionMap[session]) {
+                  sessionMap[session] = []
+                }
+
+                sessionMap[session].push(
+                  Number(s.StutteringSeverityRating) || 0
+                )
+              })
+
+              const sessionAverages = Object.values(sessionMap).map(
+                (scores) => {
+
+                  const total = scores.reduce(
+                    (sum, val) => sum + val,
+                    0
+                  )
+
+                  return total / scores.length
+                }
+              )
+
+              avgSeverity =
+                sessionAverages.reduce(
+                  (sum, val) => sum + val,
+                  0
+                ) / sessionAverages.length
+            }
+
+          return {
+            id: p._id,
+
+            childId: p.childId,
+            childName: p.childName,
+            childAge: p.childAge,
+
+            parentName: p.parentName,
+            email: p.email,
+            phone: p.phone,
+
+            completedSessions: sessions.length,
+
+            averageSeverity: Number(avgSeverity.toFixed(1)),
+          }
+        })
+      )
+
+      res.json({
+        children: result,
+      })
+
+    } catch (e) {
+      next(e)
+    }
+  }
+)
+
 clinicianRouter.get('/children/:childId/assignments', requireAuth, requireRole('clinician'), async (req, res, next) => {
   try {
     const clinicianId = req.user.clinicianId;
@@ -168,7 +267,7 @@ clinicianRouter.post('/children/:childId/assignments', requireAuth, requireRole(
     }
 
     // Validate strategies belong to clinician
-    const strategies = await Strategy.find({ clinicianId, _id: { $in: strategyIds } }).select('_id');
+    const strategies = await Strategy.find({ clinicianId, _id: { $in: strategyIds } }).select('_id title');
     const okIds = new Set(strategies.map((s) => s._id.toString()));
     const filtered = strategyIds.filter((id) => okIds.has(id));
 
@@ -178,6 +277,7 @@ clinicianRouter.post('/children/:childId/assignments', requireAuth, requireRole(
       { $set: { active: false } }
     );
 
+   
     // Upsert assignments in the list
     const newlyAssignedTitles = [];
     for (const sid of filtered) {
@@ -193,18 +293,21 @@ clinicianRouter.post('/children/:childId/assignments', requireAuth, requireRole(
       }
     }
 
-    if (newlyAssignedTitles.length > 0) {
-      const clinician = await Clinician.findById(clinicianId);
-      await sendStrategiesAssignedNotification({
-        toEmail: child.email,
-        childName: child.childName,
-        clinicianName: clinician ? clinician.name : 'your clinician',
-        strategyTitles: newlyAssignedTitles,
-      });
+    let emailed = false;
+    if (child.email && child.email.includes('@')) {
+      if (newlyAssignedTitles.length > 0) {
+        const clinician = await Clinician.findById(clinicianId);
+        await sendStrategiesAssignedNotification({
+          toEmail: child.email,
+          childName: child.childName,
+          clinicianName: clinician ? clinician.name : 'your clinician',
+          strategyTitles: newlyAssignedTitles,
+        });
+        emailed = true;
+      }
     }
-
-    res.json({ ok: true, emailed: newlyAssignedTitles.length > 0 });
-  } catch (e) {
+    res.json({ ok: true, emailed });
+}catch (e) {
     if (e && e.code === 11000) {
       const err = new Error('Duplicate assignment');
       err.statusCode = 409;
@@ -232,7 +335,9 @@ clinicianRouter.get('/children/:childId/progress', requireAuth, requireRole('cli
     res.json({
       submissions: submissions.map((s) => ({
         id: s._id,
-        rating: s.rating,
+        sessionNumber: s.sessionNumber,
+        stuttering: s.StutteringSeverityRating,
+        naturalness: s.SpeechNaturalnessRating,
         durationSeconds: s.durationSeconds,
         practiceVideoUrl: s.practiceVideoUrl || '',
         submittedAt: s.submittedAt,
@@ -269,6 +374,60 @@ clinicianRouter.delete('/children/:childId', requireAuth, requireRole('clinician
 
 const messageBodySchema = z.object({
   text: z.string().trim().min(1).max(2000),
+});
+
+clinicianRouter.get('/children/:childId/dashboard', requireAuth, requireRole('clinician'), async (req, res, next) => {
+  try {
+    const clinicianId = req.user.clinicianId;
+    const { childId } = validate(childIdParamSchema, req.params);
+
+    const child = await Parent.findOne({ _id: childId, clinicianId, status: 'active' });
+    if (!child) {
+      const err = new Error('Child not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const submissions = await PracticeSubmission.find({
+      clinicianId,
+      parentId: child._id,
+    }).populate('strategyId');
+
+    const assignments = await StrategyAssignment.find({
+      clinicianId,
+      parentId: child._id,
+      active: true,
+    });
+
+    // 🔹 Group by session
+    const sessions = {};
+    submissions.forEach((s) => {
+      const sn = s.sessionNumber;
+      if (!sessions[sn]) sessions[sn] = [];
+      sessions[sn].push(s);
+    });
+
+    // 🔹 Build session stats
+    const sessionStats = Object.keys(sessions).map((sn) => {
+      const list = sessions[sn];
+
+      return {
+        session: Number(sn),
+        count: list.length,
+        avgSeverity:
+          list.reduce((sum, x) => sum + x.StutteringSeverityRating, 0) / list.length,
+        completed: list.length === assignments.length, // all strategies done
+      };
+    });
+
+    res.json({
+      sessionStats,
+      totalStrategies: assignments.length,
+    });
+
+  } catch (e) {
+    next(e);
+  }
 });
 
 clinicianRouter.get('/children/:childId/messages', requireAuth, requireRole('clinician'), async (req, res, next) => {
@@ -329,6 +488,7 @@ clinicianRouter.get('/strategies', requireAuth, requireRole('clinician'), async 
       strategies: strategies.map((s) => ({
         id: s._id,
         title: s.title,
+        kannadaText: s.kannadaText || '',
         demoVideoUrl: s.demoVideoUrl || '',
         createdAt: s.createdAt,
       })),
@@ -339,7 +499,13 @@ clinicianRouter.get('/strategies', requireAuth, requireRole('clinician'), async 
 });
 
 const createStrategySchema = z.object({
-  title: z.string().trim().min(2).max(120),
+  title: z.string().trim().min(2).max(2000),
+
+  kannadaText: z
+    .string()
+    .trim()
+    .optional()
+    .default(''),
 });
 
 const demoUploader = createUploader({ subdir: 'strategy-demos' });
@@ -354,7 +520,12 @@ clinicianRouter.post(
     const clinicianId = req.user.clinicianId;
     const data = validate(createStrategySchema, req.body);
     const demoVideoUrl = req.file ? toPublicUploadUrl(req, req.file.path) : '';
-    const strategy = await Strategy.create({ clinicianId, title: data.title, demoVideoUrl });
+    const strategy = await Strategy.create({
+      clinicianId,
+      title: data.title,
+      kannadaText: data.kannadaText,
+      demoVideoUrl,
+    });
     res.status(201).json({
       strategy: { id: strategy._id, title: strategy.title, demoVideoUrl: strategy.demoVideoUrl, createdAt: strategy.createdAt },
     });
@@ -429,7 +600,7 @@ clinicianRouter.post('/requests/accept', requireAuth, requireRole('clinician'), 
       childName: request.childName,
       childAge: request.childAge,
       parentName: request.parentName,
-      email: request.email,
+      email: request.email || '',
       phone: request.phone,
       childId,
       status: 'active',
@@ -445,12 +616,13 @@ clinicianRouter.post('/requests/accept', requireAuth, requireRole('clinician'), 
       childId,
       clinicianName: clinician ? clinician.name : 'your clinician',
     });
+    if(request.email) {
     await sendChildIdNotification({
       toEmail: request.email,
       childId,
       clinicianName: clinician ? clinician.name : 'your clinician',
     });
-
+  }
     res.json({
       message: 'Request accepted',
       childId,

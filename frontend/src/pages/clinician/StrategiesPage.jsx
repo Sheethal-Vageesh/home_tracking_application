@@ -8,6 +8,7 @@ export function StrategiesPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [title, setTitle] = useState('')
+  const [kannadaText, setKannadaText] = useState('')
   const [demoVideo, setDemoVideo] = useState(null)
 
   async function refresh() {
@@ -34,11 +35,13 @@ export function StrategiesPage() {
     try {
       const form = new FormData()
       form.append('title', title)
+      form.append('kannadaText', kannadaText)
       if (demoVideo) form.append('demoVideo', demoVideo)
       await api.post('/api/clinicians/strategies', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       setTitle('')
+      setKannadaText('')
       setDemoVideo(null)
       await refresh()
     } catch (err) {
@@ -73,11 +76,17 @@ export function StrategiesPage() {
         </Button>
       </div>
 
-      {error ? <div className="mt-4 text-sm font-medium text-red-700">{error}</div> : null}
+      {/* {error ? <div className="mt-4 text-sm font-medium text-red-700">{error}</div> : null} */}
 
       <Card className="mt-5">
         <form onSubmit={addStrategy} className="grid gap-3">
           <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Slow rate" />
+          <Input
+            label="Kannada Instruction"
+            value={kannadaText}
+            onChange={(e) => setKannadaText(e.target.value)}
+            placeholder="ಉದಾ: ನಿಧಾನವಾಗಿ ಮಾತನಾಡಿ"
+          />
           <label className="block">
             <div className="mb-1 text-sm font-medium text-slate-700">Demo video (optional)</div>
             <input
@@ -111,6 +120,11 @@ export function StrategiesPage() {
               >
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-slate-900">{s.title}</div>
+                  {s.kannadaText ? (
+                    <div className="mt-1 text-sm text-emerald-700 font-medium">
+                      {s.kannadaText}
+                    </div>
+                  ) : null}
                   {s.demoVideoUrl ? (
                     <div className="mt-3">
                       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Demo video</div>

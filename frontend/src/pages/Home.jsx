@@ -6,47 +6,160 @@ export function Home() {
   return (
     <AppShell>
       <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 indigo-gradient-to-b from-indigo-50 to-transparent" />
+        <div className="pointer-events-none absolute inset-0 indigo-50 to-transparent" />
+
         <Container>
           <div className="grid gap-8 py-6 lg:grid-cols-2 lg:items-center lg:py-10">
+
+            {/* LEFT SECTION */}
             <div>
-              <div className="inline-flex items-center rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
+              <div className="inline-flex items-center rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs font-semibold text-indigo-900">
                 FluentPath
               </div>
-              <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+
+              {/* English + Kannada Heading */}
+              <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl leading-tight">
                 Track parent–child interaction strategies
               </h1>
-              <p className="mt-4 text-base leading-relaxed text-slate-600">
-                A secure workflow for clinicians and parents to coordinate preschool home strategies for children who
-                stutter — with demos, practice tracking, and progress review.
-              </p>
-              <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                <Link to="/get-started">
-                  <Button className="w-full sm:w-auto">Get started</Button>
-                </Link>
-                {/* <Link to="/parent/login">
-                  <Button className="w-full sm:w-auto" variant="secondary">
-                    Parent login (Child ID)
-                  </Button>
-                </Link> */}
+
+              <div className="mt-3 text-lg font-medium text-indigo-700 leading-relaxed">
+                ಪೋಷಕರು ಮತ್ತು ಮಕ್ಕಳ ಸಂವಹನ ತಂತ್ರಗಳನ್ನು ಸುಲಭವಾಗಿ ಗಮನಿಸಿ
               </div>
+
+              {/* English Description */}
+              <p className="mt-5 text-base leading-relaxed text-slate-600">
+                A secure workflow for clinicians and parents to coordinate preschool home
+                strategies for children who stutter — with demos, practice tracking,
+                and progress review.
+              </p>
+
+              {/* Kannada Description */}
+              <p className="mt-3 text-base leading-relaxed text-slate-700">
+                ಮಕ್ಕಳ ತಡತಡಿಕೆ (Stuttering) ಸಮಸ್ಯೆಗೆ ಮನೆಯಲ್ಲೇ ಅಭ್ಯಾಸ ಮಾಡಲು,
+                ಪೋಷಕರು ಮತ್ತು ತಜ್ಞರು ಒಟ್ಟಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸಲು ಸಹಾಯ ಮಾಡುವ ಸುರಕ್ಷಿತ ವೇದಿಕೆ.
+                ಇದರಲ್ಲಿ ಅಭ್ಯಾಸ ವಿಡಿಯೋಗಳು, ಪ್ರಗತಿ ಪರಿಶೀಲನೆ ಮತ್ತು ಚಿಕಿತ್ಸಾ ಟ್ರ್ಯಾಕಿಂಗ್ ಸೌಲಭ್ಯಗಳಿವೆ.
+              </p>
+
+              {/* Buttons */}
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <Link to="/get-started">
+                  <Button className="w-full sm:w-auto">
+                    Get Started / ಪ್ರಾರಂಭಿಸಿ
+                  </Button>
+                </Link>
+              </div>
+
+             
             </div>
 
+            {/* RIGHT CARD */}
             <Card className="lg:ml-auto">
               <div className="text-left">
-                <div className="text-sm font-semibold text-slate-900">How FluentPath works</div>
-                <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
-                  <li>Parents choose their clinician and send a request.</li>
-                  <li>Clinicians accept requests and assign a Child ID.</li>
-                  <li>Clinicians assign strategies with optional demo videos.</li>
-                  <li>Parents practise, submit ratings/durations, and optionally upload a practice video.</li>
+
+                {/* English Title */}
+                <div className="text-sm font-semibold text-slate-900">
+                  How FluentPath works
+                </div>
+
+                {/* Kannada Title */}
+                <div className="mt-1 text-sm font-medium text-indigo-700">
+                  FluentPath ಹೇಗೆ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ
+                </div>
+
+                <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm text-slate-700">
+
+                  <li>
+                    <div className="font-medium">
+                      Parents choose their clinician and send a request.
+                    </div>
+                    <div className="text-slate-500">
+                      ಪೋಷಕರು ತಜ್ಞರನ್ನು ಆಯ್ಕೆ ಮಾಡಿ ವಿನಂತಿಯನ್ನು ಕಳುಹಿಸುತ್ತಾರೆ.
+                    </div>
+                  </li>
+
+                  <li>
+                    <div className="font-medium">
+                      Clinicians accept requests and assign a Child ID.
+                    </div>
+                    <div className="text-slate-500">
+                      ತಜ್ಞರು ವಿನಂತಿಯನ್ನು ಸ್ವೀಕರಿಸಿ Child ID ನೀಡುತ್ತಾರೆ.
+                    </div>
+                  </li>
+
+                  <li>
+                    <div className="font-medium">
+                      Clinicians assign strategies with optional demo videos.
+                    </div>
+                    <div className="text-slate-500">
+                      ತಜ್ಞರು ಚಿಕಿತ್ಸಾ ತಂತ್ರಗಳು ಮತ್ತು ಡೆಮೊ ವಿಡಿಯೋಗಳನ್ನು ನೀಡುತ್ತಾರೆ.
+                    </div>
+                  </li>
+
+                  <li>
+                    <div className="font-medium">
+                      Parents practise, submit ratings/durations, and optionally upload a practice video.
+                    </div>
+                    <div className="text-slate-500">
+                      ಪೋಷಕರು ಅಭ್ಯಾಸ ಮಾಡಿ ಪ್ರಗತಿ ಮಾಹಿತಿಯನ್ನು ಸಲ್ಲಿಸಬಹುದು ಮತ್ತು ಅಭ್ಯಾಸ ವಿಡಿಯೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಬಹುದು.
+                    </div>
+                  </li>
+
                 </ol>
               </div>
             </Card>
+
           </div>
         </Container>
       </div>
     </AppShell>
   )
 }
+
+
+// import { Link } from 'react-router-dom'
+// import { AppShell } from '../components/AppShell'
+// import { Button, Card, Container } from '../components/ui'
+
+// export function Home() {
+//   return (
+//     <AppShell>
+//       <div className="relative overflow-hidden">
+//         <div className="pointer-events-none absolute inset-0 indigo-gradient-to-b from-indigo-50 to-transparent" />
+//         <Container>
+//           <div className="grid gap-8 py-6 lg:grid-cols-2 lg:items-center lg:py-10">
+//             <div>
+//               <div className="inline-flex items-center rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
+//                 FluentPath
+//               </div>
+//               <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+//                 Track parent–child interaction strategies
+//               </h1>
+//               <p className="mt-4 text-base leading-relaxed text-slate-600">
+//                 A secure workflow for clinicians and parents to coordinate preschool home strategies for children who
+//                 stutter — with demos, practice tracking, and progress review.
+//               </p>
+//               <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+//                 <Link to="/get-started">
+//                   <Button className="w-full sm:w-auto">Get started</Button>
+//                 </Link>
+//               </div>
+//             </div>
+
+//             <Card className="lg:ml-auto">
+//               <div className="text-left">
+//                 <div className="text-sm font-semibold text-slate-900">How FluentPath works</div>
+//                 <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
+//                   <li>Parents choose their clinician and send a request.</li>
+//                   <li>Clinicians accept requests and assign a Child ID.</li>
+//                   <li>Clinicians assign strategies with optional demo videos.</li>
+//                   <li>Parents practise, submit ratings/durations, and optionally upload a practice video.</li>
+//                 </ol>
+//               </div>
+//             </Card>
+//           </div>
+//         </Container>
+//       </div>
+//     </AppShell>
+//   )
+// }
 

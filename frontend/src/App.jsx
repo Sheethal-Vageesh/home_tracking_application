@@ -17,6 +17,8 @@ import { AssignedStrategiesPage } from './pages/parent/AssignedStrategiesPage'
 import { CompletedStrategiesPage } from './pages/parent/CompletedStrategiesPage'
 import { ParentMessagesPage } from './pages/parent/ParentMessagesPage'
 import { PracticeSessionsPage } from   './pages/parent/PracticeSessionPage'
+import { SessionStrategiesPage } from './pages/parent/SessionStrategiesPage'
+import { ClinicianProgressDashboard } from './pages/clinician/ClinicianProgressDashboard'
 
 export default function App() {
   const location = useLocation()
@@ -40,6 +42,7 @@ export default function App() {
               <Route path="requests" element={<RequestsPage />} />
               <Route path="children" element={<ChildrenPage />} />
               <Route path="strategies" element={<StrategiesPage />} />
+              <Route  path="progress" element={<ClinicianProgressDashboard />}/>
             </Route>
             <Route path="/clinician/children/:childId" element={<ClinicianChildPage />} />
           </Route>
@@ -53,9 +56,11 @@ export default function App() {
               <Route path="completed" element={<CompletedStrategiesPage />} />
               <Route path="messages" element={<ParentMessagesPage />} />
               <Route path="practice" element={<PracticeSessionsPage />} />
+              <Route path="session/:sessionNumber" element={<SessionStrategiesPage />} />
             </Route>
             <Route path="/parent/strategies/:assignmentId" element={<ParentStrategyPage />} />
           </Route>
+          
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

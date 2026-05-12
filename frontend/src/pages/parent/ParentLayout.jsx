@@ -51,19 +51,16 @@ export function ParentLayout() {
 
   const Sidebar = (
     <div className="h-full w-72 border-r border-slate-200/60 bg-white/70 p-4 backdrop-blur">
-      <div className="text-sm font-extrabold tracking-tight text-slate-900">Parent</div>
+      <div className="text-sm font-extrabold tracking-tight text-slate-900">Parent / ಪೋಷಕರು</div>
       <div className="mt-1 text-xs text-slate-500">
         {parentName ? `${parentName}${childName ? ` • ${childName}` : ''}` : 'Dashboard'}
       </div>
       <nav className="mt-4 grid gap-1">
-        <SideLink to="/parent/dashboard/assigned">Assigned strategies</SideLink>
-        <SideLink to="/parent/dashboard/practice">Practice strategies</SideLink>
-        <SideLink to="/parent/dashboard/completed">Completed strategies</SideLink>
-        <SideLink to="/parent/dashboard/messages">Messages</SideLink>
+        <SideLink to="/parent/dashboard/assigned">Assigned strategies / ನೀಡಲಾದ ತಂತ್ರಗಳು</SideLink>
+        <SideLink to="/parent/dashboard/practice">Practice strategies / ಅಭ್ಯಾಸ ತಂತ್ರಗಳು</SideLink>
+        <SideLink to="/parent/dashboard/messages">Messages / ಸಂದೇಶಗಳು</SideLink>
       </nav>
-      <div className="mt-4 rounded-xl border border-slate-200/60 bg-white/70 p-3 text-xs text-slate-600">
-        Assigned strategies move to <span className="font-semibold text-slate-900">Completed</span> after you submit.
-      </div>
+      
     </div>
   )
 
@@ -73,6 +70,9 @@ export function ParentLayout() {
         <div className="mb-4 flex items-center justify-between gap-2 lg:hidden">
           <div>
             <div className="text-sm font-extrabold tracking-tight text-slate-900">Parent dashboard</div>
+             <div className="text-xs font-medium text-indigo-700">
+              ಪೋಷಕರ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್
+            </div>
             <div className="text-xs text-slate-500">
               {parentName ? `${parentName}${childName ? ` • ${childName}` : ''}` : '—'}
             </div>

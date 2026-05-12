@@ -1,0 +1,39 @@
+const mongoose = require('mongoose')
+
+const sessionSubmissionSchema = new mongoose.Schema({
+  parentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Parent',
+    required: true,
+  },
+
+  clinicianId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinician',
+    required: true,
+  },
+
+  sessionNumber: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 10,
+  },
+
+  submittedAt: {
+    type: Date,
+    default: Date.now,
+  },
+})
+
+sessionSubmissionSchema.index(
+  { parentId: 1, sessionNumber: 1 },
+  { unique: true }
+)
+
+const SessionSubmission = mongoose.model(
+  'SessionSubmission',
+  sessionSubmissionSchema
+)
+
+module.exports = { SessionSubmission }

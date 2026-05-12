@@ -37,8 +37,8 @@ export function CompletedStrategiesPage() {
           Refresh
         </Button>
       </div>
-
-      {error ? <div className="mt-4 text-sm font-medium text-red-700">{error}</div> : null}
+{/* 
+      {error ? <div className="mt-4 text-sm font-medium text-red-700">{error}</div> : null} */}
 
       <Card className="mt-5">
         <div className="text-xs text-slate-500">Total: {assignments.length}</div>

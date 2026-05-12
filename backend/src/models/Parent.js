@@ -7,7 +7,7 @@ const parentSchema = new mongoose.Schema(
     childName: { type: String, required: true, trim: true },
     childAge: { type: Number, required: true, min: 1, max: 18 },
     parentName: { type: String, required: true, trim: true },
-    email: { type: String, required: true, trim: true, lowercase: true },
+    email: { type: String,  trim: true, lowercase: true },
     phone: { type: String, required: true, trim: true },
     childId: { type: String, required: true, unique: true, index: true },
     status: { type: String, enum: ['active', 'disabled'], default: 'active' },

@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button, Card } from '../../components/ui'
 import { api } from '../../lib/api'
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
+  BarChart, Bar, AreaChart, Area, ReferenceArea,Cell
+} from 'recharts'
+import { motion } from 'framer-motion'
 
 function formatDate(d) {
   const dt = new Date(d)
@@ -24,6 +29,7 @@ export function ClinicianChildPage() {
   const [assigned, setAssigned] = useState([])
   const [checked, setChecked] = useState({})
   const [submissions, setSubmissions] = useState([])
+  const [selectedSession, setSelectedSession] = useState(null)
 
   const [tab, setTab] = useState('assign') // assign | progress | messages
   const [loading, setLoading] = useState(true)
@@ -83,24 +89,537 @@ export function ClinicianChildPage() {
     }
   }
 
+  const sessions = Array.from({ length: 10 }, (_, i) => i + 1)
+
+  const filteredSubmissions = selectedSession
+    ? submissions.filter((s) => s.sessionNumber === selectedSession)
+    : []
+
+  
+
+
+
+ function TherapyDashboard({ submissions = [], assigned = [] }) {
+  if (!Array.isArray(submissions) || submissions.length === 0) {
+    return (
+      <div className="mt-4 text-sm text-slate-600">
+        No therapy data available yet.
+      </div>
+    )
+  }
+
+  const sessionMap = {}
+
+  submissions.forEach((s) => {
+    if (!s?.sessionNumber) return
+    if (!sessionMap[s.sessionNumber]) {
+      sessionMap[s.sessionNumber] = []
+    }
+    sessionMap[s.sessionNumber].push(s)
+  })
+
+  const sessions = Object.keys(sessionMap)
+    .map(Number)
+    .sort((a, b) => a - b)
+
+  // 📊 1. Strategies per session (BAR)
+    const strategiesPerSession = Array.from({ length: 10 }, (_, i) => {
+      const sessionNum = i + 1
+      const completed = sessionMap[sessionNum]?.length || 0
+      const total = assigned.length || 0
+
+      return {
+        session: sessionNum,
+        percent: total ? Math.round((completed / total) * 100) : 0,
+        completed,   // ✅ needed for tooltip
+        total,       // ✅ needed for tooltip
+      }
+    })
+  // 📉 2. Severity (LINE)
+    const severityData = Array.from({ length: 10 }, (_, i) => {
+      const session = i + 1
+      const list = sessionMap[session] || []
+
+      const avg =
+        list.reduce((sum, x) => sum + (x.stuttering || 0), 0) /
+        (list.length || 1)
+
+      return {
+        session: session,
+        severity: Number(avg.toFixed(2)),
+      }
+    })
+
+  // 📊 3. Strategy usage (BAR)
+  const strategyCountMap = {}
+  submissions.forEach((s) => {
+    const name = s?.strategy?.title || 'Unknown'
+    strategyCountMap[name] = (strategyCountMap[name] || 0) + 1
+  })
+
+  const strategyStats = Object.entries(strategyCountMap).map(
+    ([name, count]) => ({ name, count })
+  )
+
+  const assignedCount = assigned?.length || 0
+
+  let streak = 0
+  sessions.forEach((s) => {
+    if ((sessionMap[s] || []).length === assignedCount && assignedCount > 0) {
+      streak++
+    }
+  })
+
+    // 🚨 Risk Detection
+
+    // severity increasing?
+    let severityRisk = false
+
+    const validSeverity = severityData
+      .filter((x) => x.severity > 0)
+
+    if (validSeverity.length >= 3) {
+      const last3 = validSeverity.slice(-3)
+
+      if (
+        last3[2].severity > last3[1].severity &&
+        last3[1].severity > last3[0].severity
+      ) {
+        severityRisk = true
+      }
+    }
+
+    // incomplete strategies continuously?
+    let consistencyRisk = false
+
+    const incompleteSessions = strategiesPerSession.filter(
+      (x) => x.percent < 60
+    )
+
+    if (incompleteSessions.length >= 3) {
+      consistencyRisk = true
+    }
+
+  return (
+    <div className="mt-4 space-y-5">
+      {/* 🚨 Risk Alerts */}
+      <div className="grid gap-4 md:grid-cols-2">
+
+        {severityRisk ? (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className="border-red-200 bg-gradient-to-br from-red-50 to-orange-50">
+              <div className="flex items-start gap-3">
+
+                <div className="text-4xl animate-pulse">
+                  🚨
+                </div>
+
+                <div>
+                  <div className="text-lg font-bold text-red-700">
+                    Severity Increasing
+                  </div>
+
+                  <div className="mt-1 text-sm text-slate-700">
+                    Child stuttering severity has increased continuously
+                    over recent sessions.
+                  </div>
+
+                  <div className="mt-3 inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                    High Clinical Attention Needed
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        ) : null}
+
+        {consistencyRisk ? (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className="border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
+
+              <div className="flex items-start gap-3">
+
+                <div className="text-4xl animate-bounce">
+                  ⚠️
+                </div>
+
+                <div>
+                  <div className="text-lg font-bold text-yellow-700">
+                    Poor Practice Consistency
+                  </div>
+
+                  <div className="mt-1 text-sm text-slate-700">
+                    Child is repeatedly not completing assigned
+                    strategies across sessions.
+                  </div>
+
+                  <div className="mt-3 inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
+                    Parent Follow-up Recommended
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        ) : null}
+
+      </div>
+
+      {/* Charts */}
+      <div className="grid gap-6 md:grid-cols-2"></div>
+      {/* 📊 Strategies per session */}
+      <Card>
+        <div className="font-semibold mb-2">Strategies Completed Per Session</div>
+
+        <div className="h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={strategiesPerSession || []}>
+              <defs>
+                <linearGradient id="strategyGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+
+              <XAxis
+                dataKey="session"
+                type="number"
+                domain={[1, 10]}
+                tickCount={10}
+              />
+
+              <YAxis
+                domain={[0, 100]}
+                tickFormatter={(v) => `${v}%`}
+              />
+
+              
+              <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload || !payload.length) return null
+
+                const data = payload[0].payload
+
+                return (
+                  <div className="bg-white border rounded-lg shadow px-3 py-2 text-sm">
+                    <div className="font-semibold">Session {data.session}</div>
+                    <div>
+                      Strategies: {data.completed}/{data.total}
+                    </div>
+                    <div className="text-blue-600 font-semibold">
+                      {data.percent}%
+                    </div>
+                  </div>
+                )
+              }}
+            />
+              <Area
+                type="monotone"
+                dataKey="percent"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                fill="url(#strategyGradient)"
+                dot={{ r: 4 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      {/* 📉 Severity curve */}
+      <Card>
+        <div className="font-semibold mb-2">Stuttering Severity Trend</div>
+
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart data={severityData}>
+
+            {/* 🔴 Background Zones */}
+            <defs>
+              <linearGradient id="severityZones" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.15}/>   {/* High */}
+                <stop offset="50%" stopColor="#f59e0b" stopOpacity={0.15}/> {/* Medium */}
+                <stop offset="100%" stopColor="#22c55e" stopOpacity={0.15}/> {/* Low */}
+              </linearGradient>
+
+              <linearGradient id="severityLine" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4}/>
+                <stop offset="100%" stopColor="#6366f1" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+
+            {/* 🔥 Background fill */}
+            <Area
+              dataKey="severity"
+              fill="url(#severityZones)"
+              stroke="none"
+              isAnimationActive={false}
+            />
+
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+             <XAxis
+                dataKey="session"
+                type="number"
+                domain={[1, 10]}
+                tickCount={10}
+              />
+            <YAxis
+              domain={[0, 9]}
+              ticks={[1.5, 4.5, 7.5]} // midpoints of zones
+              tickFormatter={(value) => {
+                if (value < 3) return 'Low'
+                if (value < 6) return 'Moderate'
+                return 'High'
+              }}
+            />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload || !payload.length) return null
+
+                const data = payload[0].payload
+
+                return (
+                  <div className="bg-white border rounded-lg shadow px-3 py-2 text-sm">
+                    <div className="font-semibold">Session : {data.session}</div>
+                    <div>
+                      Severity : {data.severity}/9
+                    </div>
+                  </div>
+                )
+              }}
+            />
+            
+
+            {/* 📈 Actual Line */}
+            <Area
+              type="monotone"
+              dataKey="severity"
+              stroke="#6366f1"
+              strokeWidth={3}
+              fill="url(#severityLine)"
+              dot={{ r: 4 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+
+        {/* Labels like your image */}
+        <div className="flex justify-between text-xs mt-2 px-2 text-slate-500">
+          <span>Low</span>
+          <span>Medium</span>
+          <span>High</span>
+        </div>
+      </Card>
+
+      {/* 📊 Strategy usage */}
+     
+    
+      <Card>
+        <div className="mb-3 font-semibold text-lg">
+          Strategies Practiced Over 10 Days
+        </div>
+
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart
+            data={strategyStats}
+            margin={{
+              top: 20,
+              right: 20,
+              left: 0,
+              bottom: 20,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+
+            {/* Hide long names from X-axis */}
+            <XAxis
+              dataKey="name"
+              tick={false}
+            />
+
+            <YAxis allowDecimals={false} />
+
+            <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload || !payload.length) return null
+
+                const data = payload[0].payload
+
+                return (
+                  <div className="rounded-xl border bg-white px-3 py-2 shadow-lg text-sm">
+                    <div className="font-semibold text-slate-800">
+                      {data.name}
+                    </div>
+
+                    <div className="mt-1 text-blue-600 font-medium">
+                      Practiced {data.count} times
+                    </div>
+                  </div>
+                )
+              }}
+            />
+
+            <Bar
+              dataKey="count"
+              radius={[10, 10, 0, 0]}
+            >
+              {strategyStats.map((entry, index) => {
+                const colors = [
+                  '#3b82f6',
+                  '#22c55e',
+                  '#f59e0b',
+                  '#ef4444',
+                  '#8b5cf6',
+                  '#06b6d4',
+                  '#ec4899',
+                  '#14b8a6',
+                ]
+
+                return (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={colors[index % colors.length]}
+                  />
+                )
+              })}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+
+        {/* 🎨 Color labels */}
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          {strategyStats.map((item, index) => {
+            const colors = [
+              '#3b82f6',
+              '#22c55e',
+              '#f59e0b',
+              '#ef4444',
+              '#8b5cf6',
+              '#06b6d4',
+              '#ec4899',
+              '#14b8a6',
+            ]
+
+            return (
+              <div
+                key={index}
+                className="flex items-start gap-2 rounded-lg bg-slate-50 p-2"
+              >
+                <div
+                  className="mt-1 h-3 w-3 rounded-full"
+                  style={{
+                    backgroundColor: colors[index % colors.length],
+                  }}
+                />
+
+                <div className="text-xs text-slate-700">
+                  {item.name}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* 🔥 Streak */}
+     
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="relative overflow-hidden flex flex-col items-center justify-center min-h-[260px] bg-gradient-to-br from-orange-50 via-yellow-50 to-red-50">
+
+          {/* Background stars */}
+          <div className="absolute top-4 left-4 text-yellow-400 text-xl animate-pulse">
+            ⭐
+          </div>
+
+          <div className="absolute top-6 right-6 text-yellow-500 text-2xl animate-bounce">
+            ✨
+          </div>
+
+          <div className="absolute bottom-6 left-10 text-orange-400 text-xl animate-pulse">
+            🌟
+          </div>
+
+          <div className="absolute bottom-4 right-8 text-red-400 text-xl animate-bounce">
+            ✨
+          </div>
+
+          {/* Fire */}
+          <motion.div
+            animate={{
+              scale: [1, 1.08, 1],
+            }}
+            transition={{
+              repeat: Infinity,
+              duration: 1.5,
+            }}
+            className="text-6xl"
+          >
+            🔥
+          </motion.div>
+
+          {/* Streak Number */}
+          <motion.div
+            animate={{
+              y: [0, -4, 0],
+            }}
+            transition={{
+              repeat: Infinity,
+              duration: 2,
+            }}
+            className="mt-3 text-5xl font-extrabold text-orange-600"
+          >
+            {streak}
+          </motion.div>
+
+          <div className="mt-2 text-lg font-semibold text-slate-700">
+            Session Streak
+          </div>
+
+          <div className="mt-2 text-sm text-slate-500 text-center px-6">
+            Keep practicing daily to maintain your streak and improve fluency 🚀
+          </div>
+        </Card>
+      </motion.div>
+
+    </div>
+  )
+}    
+
+
   return (
     <div className="mx-auto w-full max-w-6xl">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-extrabold tracking-tight text-slate-900">Child</h2>
-          <p className="mt-1 text-sm text-slate-600">Assign strategies or review parent progress submissions.</p>
-        </div>
+          <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
+            Child 
+          </h2>
+
+          <p className="mt-1 text-sm text-slate-600">
+            Assign strategies or review parent progress submissions.
+          </p>
+   
+         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => nav('/clinician/dashboard/children')}>
-            Back
+            Back 
           </Button>
+
           <Button variant="secondary" onClick={loadAll}>
             Refresh
           </Button>
         </div>
       </div>
 
-      {error ? <div className="mt-4 text-sm font-medium text-red-700">{error}</div> : null}
+      {/* {error ? <div className="mt-4 text-sm font-medium text-red-700">{error}</div> : null} */}
       {msg ? <div className="mt-4 text-sm font-medium text-emerald-700">{msg}</div> : null}
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[22rem_1fr]">
@@ -110,16 +629,16 @@ export function ClinicianChildPage() {
           ) : child ? (
             <div className="space-y-3">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Child</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Child </div>
                 <div className="mt-1 text-sm font-semibold text-slate-900">{child.childName}</div>
-                <div className="text-sm text-slate-600">Age: {child.childAge}</div>
+                <div className="text-sm text-slate-600"> Age : {child.childAge}</div>
               </div>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Child ID</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Child ID </div>
                 <div className="mt-1 font-mono text-sm font-semibold text-slate-900">{child.childId}</div>
               </div>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Parent</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Parent </div>
                 <div className="mt-1 text-sm text-slate-800">{child.parentName}</div>
                 <div className="text-xs text-slate-600">{child.email}</div>
                 <div className="text-xs text-slate-600">{child.phone}</div>
@@ -131,21 +650,47 @@ export function ClinicianChildPage() {
         </Card>
 
         <div className="min-w-0">
-          <div className="flex gap-2">
-            <Button variant={tab === 'assign' ? 'primary' : 'secondary'} onClick={() => setTab('assign')}>
-              Assign strategies
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={tab === 'assign' ? 'primary' : 'secondary'}
+              onClick={() => setTab('assign')}
+            >
+              Assign Strategies
+              <br />
+              
             </Button>
-            <Button variant={tab === 'progress' ? 'primary' : 'secondary'} onClick={() => setTab('progress')}>
-              Check progress
+
+            <Button
+              variant={tab === 'progress' ? 'primary' : 'secondary'}
+              onClick={() => setTab('progress')}
+            >
+              Check Progress
+              <br />
+              
             </Button>
-            <Button variant={tab === 'messages' ? 'primary' : 'secondary'} onClick={() => setTab('messages')}>
+
+            <Button
+              variant={tab === 'dashboard' ? 'primary' : 'secondary'}
+              onClick={() => setTab('dashboard')}
+            >
+              Therapy Dashboard
+              <br />
+             
+            </Button>
+
+            <Button
+              variant={tab === 'messages' ? 'primary' : 'secondary'}
+              onClick={() => setTab('messages')}
+            >
               Messages
+            
+            
             </Button>
           </div>
 
           {tab === 'assign' ? (
             <Card className="mt-4">
-              <div className="text-sm font-semibold text-slate-900">Available strategies</div>
+              <div className="text-sm font-semibold text-slate-900">Available strategies / ಲಭ್ಯವಿರುವ ತಂತ್ರಗಳು</div>
               <div className="mt-1 text-xs text-slate-500">
                 Check strategies to assign. Assigned strategies are stored with the assignment date.
               </div>
@@ -200,72 +745,62 @@ export function ClinicianChildPage() {
             </Card>
           ) : tab === 'progress' ? (
             <Card className="mt-4">
-              <div className="text-sm font-semibold text-slate-900">Progress submissions</div>
-              <div className="mt-1 text-xs text-slate-500">Submissions sent by the parent after practice.</div>
-
-              {!loading ? (
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-xl bg-slate-50 p-3">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Assigned</div>
-                    <div className="mt-1 text-lg font-extrabold text-slate-900">{(assigned.length) + new Set(submissions.map((x) => x?.strategy?.id).filter(Boolean)).size}</div>
-                  </div>
-                  <div className="rounded-xl bg-slate-50 p-3">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Completed</div>
-                    <div className="mt-1 text-lg font-extrabold text-slate-900">
-                      {new Set(submissions.map((x) => x?.strategy?.id).filter(Boolean)).size}
-                    </div>
-                  </div>
-                  <div className="rounded-xl bg-slate-50 p-3">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Completion</div>
-                    <div className="mt-1 text-lg font-extrabold text-slate-900">
-                      {assigned.length === 0
-                        ? new Set(submissions.map((x) => x?.strategy?.id).filter(Boolean)).size === 0 ? '0%' : '100%'
-                        : `${Math.round(
-                            (new Set(submissions.map((x) => x?.strategy?.id).filter(Boolean)).size / (assigned.length + new Set(submissions.map((x) => x?.strategy?.id).filter(Boolean)).size)) * 100,
-                          )}%`}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {!loading ? (
-                <div className="mt-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date-wise submissions</div>
-                  <DateWiseBars submissions={submissions} />
-                </div>
-              ) : null}
-
-              <div className="mt-4 grid gap-3">
-                {loading ? (
-                  <div className="text-sm text-slate-600">Loading…</div>
-                ) : submissions.length === 0 ? (
-                  <div className="text-sm text-slate-600">No progress submissions yet.</div>
+             {/* Session Buttons */}
+              <div className="mt-4 grid grid-cols-5 gap-2">
+                {sessions.map((s) => (
+                  <Button
+                    key={s}
+                    variant={selectedSession === s ? 'primary' : 'secondary'}
+                    onClick={() => setSelectedSession(s)}
+                  >
+                    Session {s}
+                  </Button>
+                ))}
+              </div>
+              <div className="mt-4">
+                {!selectedSession ? (
+                  <div className="text-sm text-slate-600">Select a session to view progress.</div>
+                ) : filteredSubmissions.length === 0 ? (
+                  <div className="text-sm text-slate-600">No submissions for this session.</div>
                 ) : (
-                  submissions.map((s) => (
-                    <div key={s.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-sm font-semibold text-slate-900">{s.strategy?.title || 'Strategy'}</div>
-                      <div className="mt-1 text-xs text-slate-600">Submitted: {formatDate(s.submittedAt)}</div>
-                      <div className="mt-3 grid gap-2 text-sm text-slate-800 sm:grid-cols-2">
-                        <div>
-                          Rating: <span className="font-semibold">{s.rating}/5</span>
+                  <div className="grid gap-3">
+                    {filteredSubmissions.map((s) => (
+                      <div key={s.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="text-sm font-semibold text-slate-900">
+                          {s.strategy?.title || 'Strategy'}
                         </div>
-                        <div>
-                          Duration: <span className="font-semibold">{secondsToHms(s.durationSeconds)}</span>
+
+                        <div className="mt-1 text-xs text-slate-600">
+                          Submitted: {formatDate(s.submittedAt)}
                         </div>
+
+                        <div className="mt-3 grid gap-2 text-sm text-slate-800 sm:grid-cols-2">
+                          <div>
+                            Stuttering: <span className="font-semibold">{s.stuttering}/9</span>
+                          </div>
+                          <div>
+                            Naturalness: <span className="font-semibold">{s.naturalness}/9</span>
+                          </div>
+                          <div>
+                            Duration: <span className="font-semibold">{secondsToHms(s.durationSeconds)}</span>
+                          </div>
+                        </div>
+
+                        {s.practiceVideoUrl ? (
+                          <div className="mt-3">
+                            <video className="mt-2 w-full max-w-xl rounded-xl border border-slate-200 bg-black" controls>
+                              <source src={s.practiceVideoUrl} />
+                            </video>
+                          </div>
+                        ) : null}
                       </div>
-                      {s.practiceVideoUrl ? (
-                        <div className="mt-3">
-                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Practice video</div>
-                          <video className="mt-2 w-full max-w-xl rounded-xl border border-slate-200 bg-black" controls>
-                            <source src={s.practiceVideoUrl} />
-                          </video>
-                        </div>
-                      ) : null}
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
             </Card>
+          ) : tab === 'dashboard' ? (
+            <TherapyDashboard submissions={submissions} assigned={assigned} />
           ) : (
             <MessagesPanel childId={childId} />
           )}
@@ -366,7 +901,7 @@ function MessagesPanel({ childId }) {
         </Button>
       </div>
 
-      {error ? <div className="mt-3 text-sm font-medium text-red-700">{error}</div> : null}
+      {/* {error ? <div className="mt-3 text-sm font-medium text-red-700">{error}</div> : null} */}
 
       <div className="mt-4 max-h-[45vh] overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-3">
         {loading ? <div className="text-sm text-slate-600">Loading…</div> : null}

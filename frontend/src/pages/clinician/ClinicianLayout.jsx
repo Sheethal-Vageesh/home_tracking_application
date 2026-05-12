@@ -52,6 +52,7 @@ export function ClinicianLayout() {
         <SideLink to="/clinician/dashboard/requests">Requests</SideLink>
         <SideLink to="/clinician/dashboard/children">Children</SideLink>
         <SideLink to="/clinician/dashboard/strategies">Strategies</SideLink>
+        <SideLink to="/clinician/dashboard/progress"> Progress Dashboard</SideLink>
       </nav>
       <div className="mt-4 rounded-xl border border-slate-200/60 bg-white/70 p-3 text-xs text-slate-600">
         Tip: Start with <span className="font-semibold text-slate-900">Requests</span> to accept parents and assign Child

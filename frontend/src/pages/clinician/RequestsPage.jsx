@@ -70,7 +70,7 @@ export function RequestsPage() {
         </Button>
       </div>
 
-      {error ? <div className="mt-4 text-sm font-medium text-red-700">{error}</div> : null}
+      {/* {error ? <div className="mt-4 text-sm font-medium text-red-700">{error}</div> : null} */}
       {acceptedMsg ? <div className="mt-4 text-sm font-medium text-emerald-700">{acceptedMsg}</div> : null}
 
       <Card className="mt-5">
