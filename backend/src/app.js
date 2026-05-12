@@ -27,13 +27,25 @@ function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(morgan('dev'));
 
+
+  // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+  // Serve frontend static files
+  app.use(express.static(path.join(process.cwd(), 'public')));
+
+
   app.get('/health', (_req, res) => res.json({ ok: true }));
+
 
   app.use('/api/auth', authRouter);
   app.use('/api/clinicians', clinicianRouter);
   app.use('/api/parents', parentRouter);
+
+  // Serve index.html for all other routes (for React Router)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+  });
 
   app.use(notFoundHandler);
   app.use(errorHandler);
