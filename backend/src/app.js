@@ -43,8 +43,8 @@ function createApp() {
   app.use('/api/parents', parentRouter);
 
   // Serve index.html for all other routes (for React Router)
-  app.get('/*', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+  app.use((req, res) => {
+  res.sendFile(path.join(process.cwd(), "public", "index.html"));
   });
 
   app.use(notFoundHandler);
