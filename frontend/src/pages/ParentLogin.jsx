@@ -53,7 +53,7 @@ export function ParentLogin() {
 
             <p className="mt-2 text-sm leading-relaxed text-slate-700">
               ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ತಜ್ಞರು ಸ್ವೀಕರಿಸಿದ ನಂತರ ನೀಡಲಾದ
-              Child ID ಅನ್ನು ನಮೂದಿಸಿ.
+              ಮಗುವಿನ ಐಡಿ ಅನ್ನು ನಮೂದಿಸಿ.
             </p>
           </div>
 
@@ -67,7 +67,7 @@ export function ParentLogin() {
               </div>
 
               <div className="mt-1 text-sm text-slate-700 leading-relaxed">
-                ನಿಮ್ಮ ತಜ್ಞರಿಂದ ಪಡೆದ Child ID ಬಳಸಿ ಲಾಗಿನ್ ಮಾಡಿ.
+                ನಿಮ್ಮ ತಜ್ಞರಿಂದ ಪಡೆದ ಮಗುವಿನ ಐಡಿ ಬಳಸಿ ಲಾಗಿನ್ ಮಾಡಿ.
               </div>
             </div>
 

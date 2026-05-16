@@ -28,14 +28,13 @@ export function Home() {
 
               {/* English Description */}
               <p className="mt-5 text-base leading-relaxed text-slate-600">
-                A secure workflow for clinicians and parents to coordinate preschool home
-                strategies for children who stutter — with demos, practice tracking,
+                A secure workflow for clinicians and parents to coordinate Parent-child interaction strategies for preschool children who stutter — with demos, practice tracking,
                 and progress review.
               </p>
 
               {/* Kannada Description */}
               <p className="mt-3 text-base leading-relaxed text-slate-700">
-                ಮಕ್ಕಳ ತಡತಡಿಕೆ (Stuttering) ಸಮಸ್ಯೆಗೆ ಮನೆಯಲ್ಲೇ ಅಭ್ಯಾಸ ಮಾಡಲು,
+                ಮಕ್ಕಳ ತೊದಲುವಿಕೆ (Stuttering) ಸಮಸ್ಯೆಗೆ ಮನೆಯಲ್ಲೇ ಅಭ್ಯಾಸ ಮಾಡಲು,
                 ಪೋಷಕರು ಮತ್ತು ತಜ್ಞರು ಒಟ್ಟಾಗಿ ಕಾರ್ಯನಿರ್ವಹಿಸಲು ಸಹಾಯ ಮಾಡುವ ಸುರಕ್ಷಿತ ವೇದಿಕೆ.
                 ಇದರಲ್ಲಿ ಅಭ್ಯಾಸ ವಿಡಿಯೋಗಳು, ಪ್ರಗತಿ ಪರಿಶೀಲನೆ ಮತ್ತು ಚಿಕಿತ್ಸಾ ಟ್ರ್ಯಾಕಿಂಗ್ ಸೌಲಭ್ಯಗಳಿವೆ.
               </p>
@@ -63,7 +62,7 @@ export function Home() {
 
                 {/* Kannada Title */}
                 <div className="mt-1 text-sm font-medium text-indigo-700">
-                  FluentPath ಹೇಗೆ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ
+                  ಫ್ಲ್ಯೂಎನ್ಟ್ ಪಾತ್ ಹೇಗೆ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ
                 </div>
 
                 <ol className="mt-4 list-decimal space-y-4 pl-5 text-sm text-slate-700">
@@ -82,7 +81,7 @@ export function Home() {
                       Clinicians accept requests and assign a Child ID.
                     </div>
                     <div className="text-slate-500">
-                      ತಜ್ಞರು ವಿನಂತಿಯನ್ನು ಸ್ವೀಕರಿಸಿ Child ID ನೀಡುತ್ತಾರೆ.
+                      ತಜ್ಞರು ವಿನಂತಿಯನ್ನು ಸ್ವೀಕರಿಸಿ ಮಗುವಿನ ಐಡಿ ನೀಡುತ್ತಾರೆ.
                     </div>
                   </li>
 
@@ -97,10 +96,10 @@ export function Home() {
 
                   <li>
                     <div className="font-medium">
-                      Parents practise, submit ratings/durations, and optionally upload a practice video.
+                      Parents practise the strategies, indicate strategies implemented & duration of home training, submit the severity ratings, and upload the home training video (optional)
                     </div>
                     <div className="text-slate-500">
-                      ಪೋಷಕರು ಅಭ್ಯಾಸ ಮಾಡಿ ಪ್ರಗತಿ ಮಾಹಿತಿಯನ್ನು ಸಲ್ಲಿಸಬಹುದು ಮತ್ತು ಅಭ್ಯಾಸ ವಿಡಿಯೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಬಹುದು.
+                      ಪೋಷಕರು ಈ ತಂತ್ರಗಳನ್ನು ಅಭ್ಯಾಸ ಮಾಡಬೇಕು, ಅಳವಡಿಸಿಕೊಂಡ ತಂತ್ರಗಳು ಮತ್ತು ಮನೆ ತರಬೇತಿಯ ಅವಧಿಯನ್ನು ನಮೂದಿಸಬೇಕು, ತೀವ್ರತೆಯ ರೇಟಿಂಗ್‌ಗಳನ್ನು (Severity ratings) ಸಲ್ಲಿಸಬೇಕು ಮತ್ತು ಮನೆ ತರಬೇತಿಯ ವೀಡಿಯೊವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಬೇಕು (ಇದು ಐಚ್ಛಿಕ) 
                     </div>
                   </li>
 

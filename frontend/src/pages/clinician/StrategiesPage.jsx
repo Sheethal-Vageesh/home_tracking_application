@@ -80,9 +80,9 @@ export function StrategiesPage() {
 
       <Card className="mt-5">
         <form onSubmit={addStrategy} className="grid gap-3">
-          <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Slow rate" />
+          <Input label="Strategy in English" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Slow rate" />
           <Input
-            label="Kannada Instruction"
+            label="Strategy in Kannada (optional)"
             value={kannadaText}
             onChange={(e) => setKannadaText(e.target.value)}
             placeholder="ಉದಾ: ನಿಧಾನವಾಗಿ ಮಾತನಾಡಿ"
@@ -129,7 +129,7 @@ export function StrategiesPage() {
                     <div className="mt-3">
                       <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Demo video</div>
                       <video className="mt-2 w-full max-w-md rounded-xl border border-slate-200 bg-black" controls>
-                        <source src={s.demoVideoUrl} />
+                        <source src={s.demoVideoUrl && s.demoVideoUrl.startsWith('http') ? s.demoVideoUrl : `${import.meta.env.VITE_API_URL || ''}${s.demoVideoUrl}`} />
                       </video>
                     </div>
                   ) : (

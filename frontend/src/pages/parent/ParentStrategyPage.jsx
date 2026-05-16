@@ -110,7 +110,7 @@ export function ParentStrategyPage() {
           <div className="flex items-end justify-between gap-3">
             <div>
               <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                Strategy / ತಂತ್ರ ಅಭ್ಯಾಸ
+                 Parent-Child Interaction Strategies to implement / ಅಳವಡಿಸಿಕೊಳ್ಳಬೇಕಾದ ಪೋಷಕ-ಮಕ್ಕಳ ಸಂವಹನ ತಂತ್ರಗಳು
               </h2>
 
               <p className="mt-2 text-sm text-slate-600">
@@ -165,7 +165,7 @@ export function ParentStrategyPage() {
                       className="mt-2 w-full rounded-xl border border-slate-200 bg-black"
                       controls
                     >
-                      <source src={assignment.strategy.demoVideoUrl} />
+                      <source src={assignment.strategy.demoVideoUrl && assignment.strategy.demoVideoUrl.startsWith('http') ? assignment.strategy.demoVideoUrl : `${import.meta.env.VITE_API_URL || ''}${assignment.strategy.demoVideoUrl}`} />
                     </video>
                   </div>
                 ) : (
@@ -175,23 +175,23 @@ export function ParentStrategyPage() {
                     ಕ್ಲಿನಿಷಿಯನ್ ಯಾವುದೇ ಡೆಮೊ ವೀಡಿಯೊ ನೀಡಿಲ್ಲ.
                   </div>
                 )}
-
-                <div className="mt-6 grid gap-6">
+              
+                <div className="mt-6 grid gap-6 bg-gray-200 rounded-xl p-8">
 
                   {/* Severity */}
                   <div>
                     <div className="text-sm font-semibold text-slate-900">
                       Stuttering Severity Rating (0–9)
                       <br />
-                      ತಡಕಾಟ ತೀವ್ರತಾ ಮೌಲ್ಯಮಾಪನ (0–9)
+                      ತೊದಲುವಿಕೆ ತೀವ್ರತಾ ಮೌಲ್ಯಮಾಪನ (0–9)
                     </div>
 
                     <div className="mt-1 text-xs text-slate-500">
-                      0 = No stuttering / ತಡಕಾಟ ಇಲ್ಲ
+                      0 = No stuttering / ತೊದಲುವಿಕೆ ಇಲ್ಲ
                       <br />
-                      1 = Extremely mild stuttering / ಅತ್ಯಂತ ಸೌಮ್ಯ ತಡಕಾಟ
+                      1 = Extremely mild stuttering / ಅತ್ಯಂತ ಕಡಿಮೆ ತೊದಲುವಿಕೆ
                       <br />
-                      9 = Extremely severe stuttering / ಅತ್ಯಂತ ತೀವ್ರ ತಡಕಾಟ
+                      9 = Extremely severe stuttering / ಅತ್ಯಂತ ತೀವ್ರ ತೊದಲುವಿಕೆ
                     </div>
 
                     <div className="mt-3 flex flex-wrap gap-2">

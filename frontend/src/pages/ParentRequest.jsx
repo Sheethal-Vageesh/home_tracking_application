@@ -141,7 +141,7 @@ export function ParentRequest() {
 
               <div className="mt-1 text-sm text-slate-700 leading-relaxed">
                 ತಜ್ಞರು ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ಸ್ವೀಕರಿಸಿದ ನಂತರ,
-                ನಿಮಗೆ Child ID ಇಮೇಲ್ ಮೂಲಕ ಕಳುಹಿಸಲಾಗುತ್ತದೆ.
+                ನಿಮಗೆ ಮಗುವಿನ ಐಡಿ ಇಮೇಲ್ ಮೂಲಕ ಕಳುಹಿಸಲಾಗುತ್ತದೆ.
               </div>
             </div>
 
@@ -196,9 +196,21 @@ export function ParentRequest() {
 
                 <Input
                   label="Child Age / ಮಗುವಿನ ವಯಸ್ಸು"
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="18"
                   value={form.childAge}
-                  onChange={onChange('childAge')}
-                  placeholder="e.g., 4"
+                  onChange={e => {
+                    // Restrict to one decimal place
+                    let val = e.target.value;
+                    if (val.includes('.')) {
+                      const [intPart, decPart] = val.split('.');
+                      val = intPart + (decPart ? '.' + decPart.slice(0, 1) : '');
+                    }
+                    setForm(s => ({ ...s, childAge: val }));
+                  }}
+                  placeholder="e.g., 4.2"
                 />
               </div>
 
@@ -239,7 +251,7 @@ export function ParentRequest() {
 
                   <div className="mt-1 font-normal text-slate-700">
                     ಈಗ ತಜ್ಞರು ನಿಮ್ಮ ವಿನಂತಿಯನ್ನು ಸ್ವೀಕರಿಸುವವರೆಗೆ ಕಾಯಿರಿ.
-                    ನಂತರ Child ID ಬಳಸಿ ಲಾಗಿನ್ ಮಾಡಬಹುದು.
+                    ನಂತರ ಮಗುವಿನ ಐಡಿ ಬಳಸಿ ಲಾಗಿನ್ ಮಾಡಬಹುದು.
                   </div>
                 </div>
               ) : null}
@@ -253,7 +265,7 @@ export function ParentRequest() {
                 >
                   Already have Child ID?
                   <span className="ml-1 text-slate-600">
-                    / ಈಗಾಗಲೇ Child ID ಇದೆಯೆ?
+                    / ಈಗಾಗಲೇ ಮಗುವಿನ ಐಡಿ ಇದೆಯೆ?
                   </span>
                 </Link>
 

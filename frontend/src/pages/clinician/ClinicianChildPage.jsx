@@ -4,7 +4,8 @@ import { Button, Card } from '../../components/ui'
 import { api } from '../../lib/api'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
-  BarChart, Bar, AreaChart, Area, ReferenceArea,Cell
+  BarChart, Bar, AreaChart, Area, ReferenceArea,Cell, ReferenceLine,
+  Label
 } from 'recharts'
 import { motion } from 'framer-motion'
 
@@ -255,8 +256,7 @@ export function ClinicianChildPage() {
                   </div>
 
                   <div className="mt-1 text-sm text-slate-700">
-                    Child is repeatedly not completing assigned
-                    strategies across sessions.
+                    Parent is repeatedly not completing the assigned strategies across sessions.
                   </div>
 
                   <div className="mt-3 inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
@@ -273,12 +273,12 @@ export function ClinicianChildPage() {
       {/* Charts */}
       <div className="grid gap-6 md:grid-cols-2"></div>
       {/* 📊 Strategies per session */}
-      <Card>
-        <div className="font-semibold mb-2">Strategies Completed Per Session</div>
+      <Card >
+        <div className="font-semibold mb-2">Strategies Completed Per day</div>
 
         <div className="h-[260px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={strategiesPerSession || []}>
+            <AreaChart data={strategiesPerSession || []}  margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
               <defs>
                 <linearGradient id="strategyGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4}/>
@@ -293,11 +293,13 @@ export function ClinicianChildPage() {
                 type="number"
                 domain={[1, 10]}
                 tickCount={10}
+                label={{ value: 'Days', position: 'insideBottom', dy: 5}}
               />
 
               <YAxis
                 domain={[0, 100]}
                 tickFormatter={(v) => `${v}%`}
+                label={{ value: '% of strategies completed', angle: -90,  position: 'insideLeftBottom',   dx: -35}}
               />
 
               
@@ -334,50 +336,86 @@ export function ClinicianChildPage() {
       </Card>
 
       {/* 📉 Severity curve */}
+    
       <Card>
-        <div className="font-semibold mb-2">Stuttering Severity Trend</div>
+        <div className="font-semibold mb-2">
+          Stuttering Severity Trend
+        </div>
 
-        <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={severityData}>
+        <ResponsiveContainer width="100%" height="100%" minHeight={360}>
+          <AreaChart
+            data={severityData}
+            margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+          >
 
-            {/* 🔴 Background Zones */}
+            {/* 🎨 Gradient for actual graph */}
             <defs>
-              <linearGradient id="severityZones" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.15}/>   {/* High */}
-                <stop offset="50%" stopColor="#f59e0b" stopOpacity={0.15}/> {/* Medium */}
-                <stop offset="100%" stopColor="#22c55e" stopOpacity={0.15}/> {/* Low */}
-              </linearGradient>
-
               <linearGradient id="severityLine" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4}/>
                 <stop offset="100%" stopColor="#6366f1" stopOpacity={0}/>
               </linearGradient>
             </defs>
 
-            {/* 🔥 Background fill */}
-            <Area
-              dataKey="severity"
-              fill="url(#severityZones)"
-              stroke="none"
-              isAnimationActive={false}
-            />
-
+            {/* 📊 Grid */}
             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-             <XAxis
-                dataKey="session"
-                type="number"
-                domain={[1, 10]}
-                tickCount={10}
-              />
-            <YAxis
-              domain={[0, 9]}
-              ticks={[1.5, 4.5, 7.5]} // midpoints of zones
-              tickFormatter={(value) => {
-                if (value < 3) return 'Low'
-                if (value < 6) return 'Moderate'
-                return 'High'
+
+            {/* 📅 X Axis */}
+            <XAxis
+              dataKey="session"
+              type="number"
+              domain={[1, 10]}
+              tickCount={10}
+              label={{
+                value: 'Days',
+                position: 'insideBottom',
+                dy: 10
               }}
             />
+
+            {/* 📈 Y Axis */}
+            <YAxis
+              domain={[0, 9]}
+              ticks={[0,1,2,3,4,5,6,7,8,9]}
+              tickCount={10}
+              tickMargin={10}
+              label={{
+                value: 'Average Stuttering Severity',
+                angle: -90,
+                position: 'insideLeft',
+                dx: -5,
+                style: {
+                  textAnchor: 'middle'
+                }
+              }}
+            />
+
+            {/* 🟢 Low Severity Zone */}
+            <ReferenceArea
+              y1={0}
+              y2={3}
+              fill="#90EE90"
+              fillOpacity={0.3}
+            />
+
+            {/* 🟠 Moderate Severity Zone */}
+            <ReferenceArea
+              y1={3}
+              y2={6}
+              fill="#FFD580"
+              fillOpacity={0.3}
+            />
+
+            {/* 🔴 High Severity Zone */}
+            <ReferenceArea
+              y1={6}
+              y2={9}
+              fill="#FF7F7F"
+              fillOpacity={0.3}
+            />
+
+           
+
+            {/* 💬 Tooltip */}
             <Tooltip
               content={({ active, payload }) => {
                 if (!active || !payload || !payload.length) return null
@@ -386,7 +424,10 @@ export function ClinicianChildPage() {
 
                 return (
                   <div className="bg-white border rounded-lg shadow px-3 py-2 text-sm">
-                    <div className="font-semibold">Session : {data.session}</div>
+                    <div className="font-semibold">
+                      Session : {data.session}
+                    </div>
+
                     <div>
                       Severity : {data.severity}/9
                     </div>
@@ -394,26 +435,54 @@ export function ClinicianChildPage() {
                 )
               }}
             />
-            
 
-            {/* 📈 Actual Line */}
+            {/* 📈 Actual Severity Trend */}
             <Area
               type="monotone"
               dataKey="severity"
               stroke="#6366f1"
               strokeWidth={3}
               fill="url(#severityLine)"
-              dot={{ r: 4 }}
+              dot={{
+                r: 5,
+                strokeWidth: 2,
+                fill: "#6366f1"
+              }}
+              animationDuration={1200}
             />
+
           </AreaChart>
         </ResponsiveContainer>
+        
+        {/* 🎨 Severity Labels */}        
+        <div className="flex justify-center gap-6 mt-4 text-sm font-medium">
 
-        {/* Labels like your image */}
-        <div className="flex justify-between text-xs mt-2 px-2 text-slate-500">
-          <span>Low</span>
-          <span>Medium</span>
-          <span>High</span>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded"
+              style={{ backgroundColor: '#FF7F7F' , opacity: 0.5}}
+            ></div>
+            <span>Low</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded"
+              style={{ backgroundColor: '#FFD580' ,opacity: 0.5}}
+            ></div>
+            <span>Moderate</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded"
+              style={{ backgroundColor: '#90EE90' , opacity: 0.5}}
+            ></div>
+            <span>High</span>
+          </div>
+
         </div>
+
       </Card>
 
       {/* 📊 Strategy usage */}
@@ -440,9 +509,12 @@ export function ClinicianChildPage() {
             <XAxis
               dataKey="name"
               tick={false}
+              label={{ value: 'Strategies', position: 'insideBottom', dy: 10}}
             />
 
-            <YAxis allowDecimals={false} />
+            <YAxis 
+              allowDecimals={false}  
+              label={{ value: 'Number of Days Practiced', angle: -90,  position: 'insideLeftBottom',   dx: -10}}/>
 
             <Tooltip
               content={({ active, payload }) => {
@@ -457,7 +529,7 @@ export function ClinicianChildPage() {
                     </div>
 
                     <div className="mt-1 text-blue-600 font-medium">
-                      Practiced {data.count} times
+                      Practiced {data.count} days
                     </div>
                   </div>
                 )
@@ -536,16 +608,16 @@ export function ClinicianChildPage() {
         <Card className="relative overflow-hidden flex flex-col items-center justify-center min-h-[260px] bg-gradient-to-br from-orange-50 via-yellow-50 to-red-50">
 
           {/* Background stars */}
-          <div className="absolute top-4 left-4 text-yellow-400 text-xl animate-pulse">
-            ⭐
+          <div className="absolute top-4 left-8 text-red-400 text-xl animate-bounce">
+            ✨
           </div>
 
           <div className="absolute top-6 right-6 text-yellow-500 text-2xl animate-bounce">
             ✨
           </div>
 
-          <div className="absolute bottom-6 left-10 text-orange-400 text-xl animate-pulse">
-            🌟
+          <div className="absolute bottom-4 left-8 text-red-400 text-xl animate-bounce">
+            ✨
           </div>
 
           <div className="absolute bottom-4 right-8 text-red-400 text-xl animate-bounce">
@@ -581,7 +653,7 @@ export function ClinicianChildPage() {
           </motion.div>
 
           <div className="mt-2 text-lg font-semibold text-slate-700">
-            Session Streak
+            Day Streak
           </div>
 
           <div className="mt-2 text-sm text-slate-500 text-center px-6">

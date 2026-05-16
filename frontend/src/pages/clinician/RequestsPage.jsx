@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Card, Input, Skeleton } from '../../components/ui'
 import { api } from '../../lib/api'
@@ -9,6 +10,7 @@ export function RequestsPage() {
   const [error, setError] = useState(null)
   const [acceptedMsg, setAcceptedMsg] = useState(null)
   const [childIds, setChildIds] = useState({})
+  const [baselineSeverities, setBaselineSeverities] = useState({})
 
   const alphabet = useMemo(() => '23456789ABCDEFGHJKLMNPQRSTUVWXYZ', [])
 
@@ -46,7 +48,12 @@ export function RequestsPage() {
         setError('Please assign a Child ID before accepting.')
         return
       }
-      const { data } = await api.post('/api/clinicians/requests/accept', { requestId, childId })
+      const baselineSeverity = baselineSeverities[requestId] || ''
+      if (!baselineSeverity) {
+        setError('Please select a Baseline Stutter Severity before accepting.')
+        return
+      }
+      const { data } = await api.post('/api/clinicians/requests/accept', { requestId, childId, baselineSeverity })
       setAcceptedMsg(
         `Accepted. Child ID: ${data.childId}. SMS to parent: ${data.smsDelivered ? 'sent' : 'not sent (check SMS config)'}.`,
       )
@@ -112,6 +119,21 @@ export function RequestsPage() {
                       >
                         Generate
                       </Button>
+                    </div>
+                    <div className="mt-3">
+                      <label className="block text-xs font-medium text-slate-700 mb-1">Baseline Stutter Severity</label>
+                      <select
+                        className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+                        value={baselineSeverities[r.id] || ''}
+                        onChange={e => setBaselineSeverities(s => ({ ...s, [r.id]: e.target.value }))}
+                      >
+                        <option value="">Select severity…</option>
+                        <option value="Very Mild">Very Mild</option>
+                        <option value="Mild">Mild</option>
+                        <option value="Moderate">Moderate</option>
+                        <option value="Severe">Severe</option>
+                        <option value="Very Severe">Very Severe</option>
+                      </select>
                     </div>
                   </div>
 

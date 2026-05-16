@@ -196,6 +196,35 @@ clinicianRouter.get(
                 ) / sessionAverages.length
             }
 
+            const severityBySession = {}
+
+            submissions.forEach((s) => {
+
+              const day = s.sessionNumber || 1
+
+              if (!severityBySession[day]) {
+                severityBySession[day] = []
+              }
+
+              severityBySession[day].push(
+                Number(s.StutteringSeverityRating) || 0
+              )
+            })
+
+            const severityTrend = Object.keys(severityBySession).map((day) => {
+
+              const scores = severityBySession[day]
+
+              const avg =
+                scores.reduce((a, b) => a + b, 0)
+                / scores.length
+
+              return {
+                day: Number(day),
+                severity: Number(avg.toFixed(1))
+              }
+            })
+
           return {
             id: p._id,
 
@@ -208,8 +237,9 @@ clinicianRouter.get(
             phone: p.phone,
 
             completedSessions: sessions.length,
-
+            severityTrend,
             averageSeverity: Number(avgSeverity.toFixed(1)),
+            baselineSeverity: p.baselineSeverity,
           }
         })
       )
@@ -559,6 +589,7 @@ clinicianRouter.delete('/strategies/:strategyId', requireAuth, requireRole('clin
   }
 });
 
+
 const acceptSchema = z.object({
   requestId: z.string().min(1),
   childId: z
@@ -567,11 +598,12 @@ const acceptSchema = z.object({
     .min(4)
     .max(16)
     .regex(/^[A-Za-z0-9-]+$/, 'Child ID must be letters/numbers (and -) only'),
+  baselineSeverity: z.enum(['Very Mild', 'Mild', 'Moderate', 'Severe', 'Very Severe']),
 });
 
 clinicianRouter.post('/requests/accept', requireAuth, requireRole('clinician'), async (req, res, next) => {
   try {
-    const { requestId, childId: rawChildId } = validate(acceptSchema, req.body);
+    const { requestId, childId: rawChildId, baselineSeverity } = validate(acceptSchema, req.body);
     const clinicianId = req.user.clinicianId;
 
     const request = await ParentRequest.findOne({ _id: requestId, clinicianId });
@@ -604,6 +636,7 @@ clinicianRouter.post('/requests/accept', requireAuth, requireRole('clinician'), 
       phone: request.phone,
       childId,
       status: 'active',
+      baselineSeverity,
     });
 
     request.status = 'accepted';

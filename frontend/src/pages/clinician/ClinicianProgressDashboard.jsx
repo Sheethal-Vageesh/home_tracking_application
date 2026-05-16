@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Card } from '../../components/ui'
 import { api } from '../../lib/api'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
+} from 'recharts'
 
 export function ClinicianProgressDashboard() {
   const [children, setChildren] = useState([])
@@ -10,7 +20,8 @@ export function ClinicianProgressDashboard() {
   const [severityFilter, setSeverityFilter] = useState('all')
   const [ageFilter, setAgeFilter] = useState('all')
   const [progressFilter, setProgressFilter] = useState('all')
-
+  const [baselineFilter, setBaselineFilter] = useState('all')
+  const [selectedChildren, setSelectedChildren] =  useState([])
   useEffect(() => {
     async function load() {
       try {
@@ -52,10 +63,19 @@ export function ClinicianProgressDashboard() {
           return false
       }
 
-      // age
+      // baseline severity filter
+      if (baselineFilter !== 'all') {
+
+        if (
+          c.baselineSeverity !== baselineFilter
+        ) {
+          return false
+        }
+      }
+      // age (include all children in the selected year range)
       if (
         ageFilter !== 'all' &&
-        Number(c.childAge) !== Number(ageFilter)
+        !(Number(c.childAge) >= Number(ageFilter) && Number(c.childAge) < Number(ageFilter) + 1)
       ) {
         return false
       }
@@ -83,9 +103,34 @@ export function ClinicianProgressDashboard() {
   }, [
     children,
     severityFilter,
+    baselineFilter,
     ageFilter,
     progressFilter,
   ])
+
+  const selectedChildObjects =
+      filteredChildren.filter((c) =>
+        selectedChildren.includes(c.id)
+      )
+
+    const combinedGraphData = []
+
+    for (let day = 1; day <= 10; day++) {
+
+      const row = { day }
+
+      selectedChildObjects.forEach((child) => {
+
+        const session = child.severityTrend?.find(
+          (s) => s.day === day
+        )
+
+        row[child.childName] =
+          session?.severity || null
+      })
+
+      combinedGraphData.push(row)
+    }
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -102,11 +147,11 @@ export function ClinicianProgressDashboard() {
 
       {/* Filters */}
       <Card className="mt-5 p-4">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
 
           <div>
             <label className="text-sm font-medium text-slate-700">
-              Severity
+              Average Severity
             </label>
 
             <select
@@ -125,6 +170,27 @@ export function ClinicianProgressDashboard() {
 
           <div>
             <label className="text-sm font-medium text-slate-700">
+              Baseline Severity
+            </label>
+
+            <select
+              value={baselineFilter}
+              onChange={(e) =>
+                setBaselineFilter(e.target.value)
+              }
+              className="mt-1 w-full rounded-xl border p-2"
+            >
+              <option value="all">All</option>
+              <option value="Very Mild">Very Mild</option>
+              <option value="Mild">Mild</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Severe">Severe</option>
+              <option value="Very Severe">Very Severe</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">
                 Age
             </label>
 
@@ -137,12 +203,12 @@ export function ClinicianProgressDashboard() {
             >
                 <option value="all">All Ages</option>
 
-                {Array.from({ length: 18 }, (_, i) => i + 1).map(
-                (age) => (
+                {Array.from({ length: 4 }, (_, i) => i + 3).map(
+                  (age) => (
                     <option key={age} value={age}>
-                    {age} years
+                      {age} years ({age}.0–{age}.9)
                     </option>
-                )
+                  )
                 )}
             </select>
             </div>
@@ -200,6 +266,9 @@ export function ClinicianProgressDashboard() {
                   Sessions
                 </th>
                 <th className="p-3 text-left">
+                  Baseline Severity
+                </th>
+                <th className="p-3 text-left">
                   Avg Severity
                 </th>
               </tr>
@@ -255,6 +324,24 @@ export function ClinicianProgressDashboard() {
                     </div>
                     </td>
 
+                    <td className="p-3">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          c.baselineSeverity === 'Very Mild'
+                            ? 'bg-green-100 text-green-700'
+                            : c.baselineSeverity === 'Mild'
+                            ? 'bg-lime-100 text-lime-700'
+                            : c.baselineSeverity === 'Moderate'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : c.baselineSeverity === 'Severe'
+                            ? 'bg-orange-100 text-orange-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        {c.baselineSeverity}
+                      </span>
+                    </td>
+
                   <td className="p-3">
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -274,6 +361,135 @@ export function ClinicianProgressDashboard() {
 
           </table>
         )}
+      </Card>
+
+        {/*Combined Graph Filter */}
+      <Card className="mt-5 p-4">
+
+        <h2 className="font-semibold mb-3">
+          Select Children for Combined Graph
+        </h2>
+
+        <div className="flex flex-wrap gap-3">
+
+          {filteredChildren.map((child) => (
+
+            <label
+              key={child.id}
+              className="flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer"
+            >
+
+              <input
+                type="checkbox"
+                checked={selectedChildren.includes(child.id)}
+
+                onChange={(e) => {
+
+                  if (e.target.checked) {
+
+                    setSelectedChildren((prev) => [
+                      ...prev,
+                      child.id
+                    ])
+
+                  } else {
+
+                    setSelectedChildren((prev) =>
+                      prev.filter(
+                        (id) => id !== child.id
+                      )
+                    )
+                  }
+                }}
+              />
+
+              <span className="text-sm">
+                {child.childName}
+              </span>
+
+            </label>
+          ))}
+
+        </div>
+
+      </Card>
+
+          {/* Combined Graph */}
+      <Card className="mt-6 p-5">
+
+        <h2 className="text-lg font-bold text-slate-800 mb-4">
+          Combined Severity Trend
+        </h2>
+
+        <ResponsiveContainer
+          width="100%"
+          height={450}
+        >
+
+          <LineChart
+            data={combinedGraphData}
+            margin={{
+              top: 20,
+              right: 30,
+              left: 20,
+              bottom: 20
+            }}
+          >
+
+            <CartesianGrid
+              strokeDasharray="3 3"
+              opacity={0.2}
+            />
+
+            <XAxis
+              dataKey="day"
+              label={{
+                value: 'Days',
+                position: 'insideBottom',
+                dy: 10
+              }}
+            />
+
+            <YAxis
+              domain={[0, 9]}
+              ticks={[0,1,2,3,4,5,6,7,8,9]}
+              label={{
+                value: 'Average Severity',
+                angle: -90,
+                position: 'insideLeft',
+                dx: -10
+              }}
+            />
+
+            <Tooltip />
+
+            <Legend />
+
+            {selectedChildObjects.map(
+              (child, index) => (
+
+                <Line
+                  key={child.id}
+
+                  type="monotone"
+
+                  dataKey={child.childName}
+
+                  stroke={`hsl(${index * 45}, 70%, 50%)`}
+
+                  strokeWidth={3}
+
+                  dot={{ r: 4 }}
+
+                  activeDot={{ r: 6 }}
+                />
+              )
+            )}
+
+          </LineChart>
+
+        </ResponsiveContainer>
+
       </Card>
     </div>
   )
